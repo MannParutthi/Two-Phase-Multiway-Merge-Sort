@@ -1,9 +1,14 @@
+
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.RandomAccessFile;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Random;
@@ -27,15 +32,15 @@ public class TwoPhaseMultiwayMergeSort {
 			int selectedOption = sc.nextInt();
 			switch(selectedOption) {
 				case 1:
-					System.out.println("Enter numbers to generate: ");
-					nosToGenerate = sc.nextInt();
-					generateNumber(nosToGenerate, Integer.MAX_VALUE);
+					//System.out.println("Enter numbers to generate: ");
+					//nosToGenerate = sc.nextInt();
+					//generateNumber(nosToGenerate, Integer.MAX_VALUE);
 					break;
 				case 2:
-					displayInputFile();
+					//displayInputFile();
 					break;
 				case 3:
-					TPMMS(sc, nosToGenerate);
+					TPMMS(sc);
 					break;
 				case 4:
 					sc.close();
@@ -50,7 +55,7 @@ public class TwoPhaseMultiwayMergeSort {
 		int count = 0;
 		Random r = new Random();
 		try {
-			pw = new PrintWriter(new FileOutputStream("input.txt"));
+			pw = new PrintWriter(new FileOutputStream("data.txt"));
 			while (count < size) {
 				count++;
 				if(count == size) {
@@ -69,7 +74,7 @@ public class TwoPhaseMultiwayMergeSort {
 	
 	public static void displayInputFile() { // case 2
 		try {
-			Scanner sc = new Scanner(new FileInputStream("input.txt"));
+			Scanner sc = new Scanner(new FileInputStream("data.txt"));
 			while (sc.hasNextLine()) {
 				System.out.println(sc.nextInt());
 			}
@@ -81,37 +86,66 @@ public class TwoPhaseMultiwayMergeSort {
 	}
 	
 	
-	public static void TPMMS(Scanner sc, int nosToGenerate) { // case 3
+	public static void TPMMS(Scanner sc) { // case 3
 		System.out.println("Enter Ram Size in Bytes: ");
+		//
+		long startTime = System.currentTimeMillis();
+		long stopTime;
+		long elapsedTime;
+		//System.out.println("Phase 1 started at : "+startTime);
+	      
+		Path file = Paths.get("data.txt");
 		int ramSize = sc.nextInt();
 
 		int blockSize = ramSize / 4; // 4 bytes => 1 integer => no of integers can fit in one file
-
+		Long noToGenerate = null;
+		try {
+			noToGenerate = Files.lines(file).count();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		int nosToGenerate = noToGenerate.intValue();
 		int noOfBlocks = (int) Math.ceil((double)nosToGenerate / blockSize);
-		System.out.println("Phase 1 started : ");
+		System.out.println("Phase 1 started :");
 		
 		if(noOfBlocks <= 1) {
-			generateSublists(1, nosToGenerate);
+			generateSublists(1, nosToGenerate,nosToGenerate);
 			System.out.println("End of Phase 1");
+			stopTime = System.currentTimeMillis();
+		    elapsedTime = stopTime - startTime;
+		    System.out.println("Phase 1 ended after : "+elapsedTime/1000 +" seconds");
 			System.out.println("Phase 2 not required as all numbers can be sorted in single block");
+			
 		}
 		else {
-			generateSublists(noOfBlocks, blockSize);
+			generateSublists(noOfBlocks, blockSize,nosToGenerate);
 			System.out.println("End of Phase 1 => " + noOfBlocks + " files are generated.");
-
-			System.out.println("Phase 2 started : ");
-
+			stopTime = System.currentTimeMillis();
+		    elapsedTime = stopTime - startTime;
+		    System.out.println("Phase 1 ended after : "+elapsedTime/1000 +" seconds");
+		    
+		    startTime = System.currentTimeMillis();
+			System.out.println("Phase 2 started : ");			
 			generateSortedResultFile(noOfBlocks);
 			System.out.println("End of Phase 2 =>  Sorted numbers are written into Output.txt file.");
+			stopTime = System.currentTimeMillis();
+		    elapsedTime = stopTime - startTime;
+		    System.out.println("Phase 2 ended after : "+elapsedTime/1000 +" seconds");
 		}
 	}
 
-	public static void generateSublists(int noOfFilesReq, int size) {
+	public static void generateSublists(int noOfFilesReq, int size,int nosToGenerate) {
 		try {
-			Scanner sc = new Scanner(new FileInputStream("input.txt"));
-			for (int i = 1; i <= noOfFilesReq; i++) {
+			Scanner sc = new Scanner(new FileInputStream("data.txt"));
+			for (int i = 1; i <= noOfFilesReq; i++) {   // 667, 1500
 				int count = 0;
-				int[] arr = new int[size];
+				int[] arr;
+				if(i == noOfFilesReq && nosToGenerate % size != 0) {
+					arr = new int[nosToGenerate % size];
+				}
+				else {
+					arr = new int[size];
+				}				
 				PrintWriter pw;
 				if(noOfFilesReq == 1) {
 					pw = new PrintWriter(new FileOutputStream("Output.txt"));
@@ -119,7 +153,7 @@ public class TwoPhaseMultiwayMergeSort {
 				else {
 					pw = new PrintWriter(new FileOutputStream("level0-file" + i + ".txt"));
 				}
-				while (sc.hasNextLine() && count < size) {
+				while (sc.hasNextInt() && count < size) {
 					arr[count] = sc.nextInt();
 					count++;
 				}
